@@ -712,6 +712,8 @@ class Matrix:
                     if multiplier != 0:
                         matrix_copy_2 = matrix_copy.copy_current()
                         matrix_copy_2.strip_col(j)
+                        if (axis_index + j) % 2 == 1:
+                            multiplier *= -1
                         det += multiplier * matrix_copy_2.determinant
             elif axis_type == "col":
                 matrix_copy.strip_col(axis_index)
@@ -720,6 +722,8 @@ class Matrix:
                     if multiplier != 0:
                         matrix_copy_2 = matrix_copy.copy_current()
                         matrix_copy_2.strip_row(i)
+                        if (i + axis_index) % 2 == 1:
+                            multiplier *= -1
                         det += multipler * matrix_copy_2.determinant
             return det
 
