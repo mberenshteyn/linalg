@@ -5,9 +5,10 @@ class SizeError(Exception):
     pass
 
 class Matrix:
-    def __init__(self, array):
+    def __init__(self, array, aug = None):
         self.rows = [[Fraction(val) if type(val) != np.Polynomial else val for val in row] for row in array]
         self.unchanged_rows = [[Fraction(val) if type(val) != np.Polynomial else val for val in row] for row in array] #Never change this variable!
+        self.aug_matrix = aug
         self.cleanup()
 
     def __eq__(self, other):
@@ -73,9 +74,8 @@ class Matrix:
 
     def cleanup(self):
         """
-        Iterates through every value in the matrix instance to round numbers to 12 digits (to avoid Python errors such
-        as 0 being represented with -2.23e-16, rather than adjusting all values into the Decimal data type.)
-        Then iterates through every value to turn redundant floats (e.g. 1.0, 0.0, -0.0) into ints.
+        Iterates through every value in the matrix instance to round numbers to 12 digits.
+        Also converts redundant floats (e.g. 1.0, -0.0) into ints.
         Should only be called as part of other functions (e.g. gauss_elim and back_sub)
 
         >>> A = Matrix([[1.0, 0.0, -1.0], [0.5, -0.0, 3.0], [1.5, 2.0, 2.5]])
@@ -83,6 +83,8 @@ class Matrix:
         >>> print(A)
         [['1', '0', '-1'], ['1/2', '0', '3'], ['3/2', '2', '5/2']]
         """
+        if self.augmented:
+            self.aug_matrix.cleanup()
         for i in range(self.num_row):
             for j in range(self.num_col):
                 val_ij = self.get_val(i, j)
@@ -182,23 +184,11 @@ class Matrix:
         >>> print(A)
         [['1', '2'], ['6', '8']]
         """
+        if (self.augmented):
+            self.aug_matrix.scale_row(i, scal)
         scaled_row = [scal * val for val in self.get_row(i)]
         self.change_row(i, scaled_row)
         self.cleanup()
-
-    def ret_scale_row(self, i, scal):
-        """
-        A variant of scale_row that, instead of actually scaling the row value,
-        just returns a scaled version of the ith row of the matrix instance.
-        Doesn't change the matrix instance!
-
-        >>> A = Matrix([[1, 5], [1, 3]])
-        >>> A.ret_scale_row(1, 3)
-        [Fraction(3, 1), Fraction(9, 1)]
-        >>> print(A)
-        [['1', '5'], ['1', '3']]
-        """
-        return [scal * val for val in self.get_row(i)]
 
     def swap_rows(self, i, j):
         """
@@ -210,23 +200,27 @@ class Matrix:
         >>> print(A)
         [['3', '4'], ['1', '2']]
         """
+        if (self.augmented):
+            self.aug_matrix.swap_rows(i, j)
         row_at_i = self.get_row(i)
         row_at_j = self.get_row(j)
         self.change_row(i, row_at_j)
         self.change_row(j, row_at_i)
 
-    def sub_from_row(self, i, row):
+    def sub_from_row(self, i, j, scal = 1):
         """
-        Subtracts a given row from the ith row of the matrix instance. Specifically for use in back_sub.
+        Subtracts a scalar multiple of the jth row from the ith row of the matrix instance.
 
         >>> A = Matrix([[1, 3], [4, 4]])
-        >>> A.sub_from_row(1, [3, 2])
+        >>> A.sub_from_row(1, 0)
         >>> A.get_row(1)
-        [Fraction(1, 1), Fraction(2, 1)]
+        [Fraction(3, 1), Fraction(1, 1)]
         """
-        new_row = [0 for _ in row]
-        for j in range(self.num_col):
-            new_row[j] = self.get_val(i, j) - row[j]
+        if (self.augmented):
+            self.aug_matrix.sub_from_row(i, j, scal)
+        new_row = [0 for _ in range(self.num_col)]
+        for k in range(self.num_col):
+            new_row[k] = self.get_val(i, k) - scal * self.get_val(j, k)
         self.change_row(i, new_row)
 
     """
@@ -347,23 +341,33 @@ class Matrix:
         """
         return Matrix([self.get_col(j) for j in range(self.num_col)])
 
-    def augment(self, v):
+    def augment(self, aug_mat):
         """
-        Adds a column vector v to the right of the existing matrix instance. Useful for solving linear systems.
+        Augments a matrix to the right of the existing matrix instance.
 
         >>> A = Matrix([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
-        >>> v = [4, 3, 2]
+        >>> v = Matrix([[4], [3], [2]])
         >>> A.augment(v)
-        >>> A.num_col
-        4
-        >>> A.get_col(3)
-        [Fraction(4, 1), Fraction(3, 1), Fraction(2, 1)]
+        >>> print(A.aug_matrix)
+        [['4'], ['3'], ['2']]
         """
-        assert type(v) == list and len(v) == self.num_row, f"The augmented column must be a list of length {self.num_row}"
-        for i in range(self.num_row):
-            self.rows[i].append(Fraction(v[i]))
-            self.unchanged_rows[i].append(Fraction(v[i]))
+        assert isinstance(aug_mat, Matrix) and aug_mat.num_row == self.num_row, f"The augmented column must have {self.num_row} rows"
+        assert self.aug_matrix == None, f"The matrix instance is already augmented"
+        self.aug_matrix = aug_mat
 
+    def deaugment(self):
+        """
+        Clears the augmented matrix if it exists, otherwise does nothing.
+
+        >>> A = Matrix([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+        >>> v = Matrix([[4], [3], [2]])
+        >>> A.augment(v)
+        >>> A.deaugment()
+        >>> print(A.aug_matrix == None)
+        True
+        """
+        self.aug_matrix = None
+    
     @property
     def inverse(self):
         """
@@ -378,6 +382,7 @@ class Matrix:
         >>> print(A.inverse * A)
         [['1', '0', '0'], ['0', '1', '0'], ['0', '0', '1']]
         """
+    
         if not self.square:
             raise SizeError("Non-square matrices do not have an inverse")
         elif self.determinant == 0:
@@ -386,56 +391,22 @@ class Matrix:
             return self
 
         mat_copy = self.copy_current()
-        id_mat = IdentityMatrix(self.num_row)
+        mat_copy.augment(IdentityMatrix(self.num_row))
 
-        #Gaussian elimination
-        current_row = 0
-        current_col = 0
-        while (current_row < mat_copy.num_row) and (current_col < mat_copy.num_col):
-            i_max = max(range(current_row, mat_copy.num_row), key = lambda row: abs(mat_copy.get_val(row, current_col)))
-            if mat_copy.get_val(i_max, current_col) == 0:
-                current_col += 1
-            else:
-                mat_copy.swap_rows(current_row, i_max)
-                id_mat.swap_rows(current_row, i_max)
-                for i in range(current_row + 1, mat_copy.num_row):
-                    f = Fraction(mat_copy.get_val(i, current_col), mat_copy.get_val(current_row, current_col))
-                    for j in range(current_col, mat_copy.num_col):
-                        id_mat.change_val(i, j, (id_mat.get_val(i, j) - f*(id_mat.get_val(current_row, j))))
-                        mat_copy.change_val(i, j, (mat_copy.get_val(i, j) - f*(mat_copy.get_val(current_row, j))))
-                current_row += 1
-                current_col += 1
-
-        #Back substitution
-        for index in range(mat_copy.num_row - 1, 0, -1):
-            pivot, pivot_index = 1, 0
-            while pivot_index < mat_copy.num_col:
-                if mat_copy.get_val(index, pivot_index) != 0:
-                    pivot = mat_copy.get_val(index, pivot_index)
-                    break
-                pivot_index += 1
-            if pivot_index != mat_copy.num_col:
-                for scaled_row_index in range(index-1, -1, -1):
-                    scale = Fraction(mat_copy.get_val(scaled_row_index, pivot_index), pivot)
-                    id_mat.sub_from_row(scaled_row_index, id_mat.ret_scale_row(index, scale))
-                    mat_copy.sub_from_row(scaled_row_index, mat_copy.ret_scale_row(index, scale))
-        for i in range(mat_copy.num_row):
-            new_pivot_index = 0
-            while new_pivot_index < mat_copy.num_col:
-                if mat_copy.get_val(i, new_pivot_index) != 0:
-                    break
-                new_pivot_index += 1
-            if new_pivot_index != mat_copy.num_col:
-                id_mat.scale_row(i, Fraction(1, mat_copy.get_val(i, new_pivot_index)))
-                mat_copy.scale_row(i, Fraction(1, mat_copy.get_val(i, new_pivot_index)))
-        mat_copy.cleanup()
-        id_mat.cleanup()
-        if mat_copy.identity:
-            return id_mat
+        mat_copy.gauss_elim()
+        mat_copy.back_sub()
+        return mat_copy.aug_matrix
 
     """
     Check Methods
     """
+
+    @property
+    def augmented(self):
+        """
+        Returns True if the matrix instance is augmented and False otherwise.
+        """
+        return (self.aug_matrix is not None)
 
     @property
     def square(self):
@@ -629,8 +600,7 @@ class Matrix:
                 self.swap_rows(current_row, i_max)
                 for i in range(current_row + 1, self.num_row):
                     f = self.get_val(i, current_col) / self.get_val(current_row, current_col)
-                    for j in range(current_col, self.num_col):
-                        self.change_val(i, j, (self.get_val(i, j) - f*(self.get_val(current_row, j))))
+                    self.sub_from_row(i, current_row, f)
                 current_row += 1
                 current_col += 1
         self.cleanup()
@@ -662,7 +632,7 @@ class Matrix:
             if pivot_index != self.num_col:
                 for scaled_row_index in range(index -1, -1, -1):
                     scale = (self.get_val(scaled_row_index, pivot_index) / pivot)
-                    self.sub_from_row(scaled_row_index, self.ret_scale_row(index, scale))
+                    self.sub_from_row(scaled_row_index, index, scale)
         for i in range(self.num_row):
             new_pivot_index = 0
             while new_pivot_index < self.num_col:
@@ -785,7 +755,7 @@ class Matrix:
                         matrix_copy_2.strip_row(i)
                         if (i + axis_index) % 2 == 1:
                             multiplier *= -1
-                        det += multipler * matrix_copy_2.determinant
+                        det += multiplier * matrix_copy_2.determinant
             return det
 
     """
@@ -800,7 +770,7 @@ class Matrix:
         manipulated_matrix = self - subtract_matrix
         char_eq = manipulated_matrix.determinant
         coefficients = [coef for coef in char_eq]
-        return np.polyroots(coefficients)
+        return np.polyroots(coefficients)   
 
     def eigenvectors(self):
         # Iterate through process with each eigenvalue
