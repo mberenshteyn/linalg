@@ -394,8 +394,6 @@ class Matrix:
             raise SizeError("Non-square matrices do not have an inverse")
         elif self.determinant == 0:
             return None
-        elif self.symmetric:
-            return self
 
         mat_copy = self.copy_current()
         mat_copy.augment(Matrix.identity(self.num_row))
@@ -637,7 +635,7 @@ class Matrix:
                     break
                 pivot_index += 1
             if pivot_index != self.num_col:
-                for scaled_row_index in range(index -1, -1, -1):
+                for scaled_row_index in range(index - 1, -1, -1):
                     scale = (self._get_val(scaled_row_index, pivot_index) / pivot)
                     self._sub_from_row(scaled_row_index, index, scale)
         for i in range(self.num_row):
