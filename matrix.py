@@ -11,6 +11,13 @@ class Matrix:
         self.aug_matrix = aug
         self.cleanup()
 
+    @classmethod
+    def identity(self, size):
+        array = [[0 for i in range(size)] for i in range(size)]
+        for i in range(size):
+            array[i][i] = 1
+        return Matrix(array)
+
     def __eq__(self, other):
         """
         Defines equality of matrices as having the same dimensions and consisting of the same values.
@@ -273,7 +280,7 @@ class Matrix:
         >>> print(A * 3)
         [['3', '6', '9'], ['12', '15', '18']]
         """
-        if type(value) == Matrix or type(value) == IdentityMatrix:
+        if isinstance(value, Matrix):
             return self.matmul(value)
         elif type(value) == int or type(value) == float or type(value) == np.Polynomial:
             return self.scmul(value)
@@ -367,7 +374,7 @@ class Matrix:
         True
         """
         self.aug_matrix = None
-    
+
     @property
     def inverse(self):
         """
@@ -382,7 +389,7 @@ class Matrix:
         >>> print(A.inverse * A)
         [['1', '0', '0'], ['0', '1', '0'], ['0', '0', '1']]
         """
-    
+
         if not self.square:
             raise SizeError("Non-square matrices do not have an inverse")
         elif self.determinant == 0:
@@ -391,7 +398,7 @@ class Matrix:
             return self
 
         mat_copy = self.copy_current()
-        mat_copy.augment(IdentityMatrix(self.num_row))
+        mat_copy.augment(Matrix.identity(self.num_row))
 
         mat_copy.gauss_elim()
         mat_copy.back_sub()
@@ -427,7 +434,7 @@ class Matrix:
         return self.num_row == self.num_col
 
     @property
-    def identity(self):
+    def is_identity(self):
         """
         Returns True if the matrix instance is an identity matrix (a square matrix with
         1s along the main diagonal and 0s for all other values.) and False otherwise.
@@ -435,11 +442,11 @@ class Matrix:
         >>> A = Matrix([[1, 0], [0, 1]])
         >>> B = Matrix([[1, 0, 0], [0, 1, 0]])
         >>> C = Matrix([[1, 0], [0, 4]])
-        >>> A.identity
+        >>> A.is_identity
         True
-        >>> B.identity
+        >>> B.is_identity
         False
-        >>> C.identity
+        >>> C.is_identity
         False
         """
         if not self.square:
@@ -679,33 +686,39 @@ class Matrix:
         """
         Calculates the row space of a matrix A, which is equivalent to the column space of its transpose.
         """
-        pass
+        return self.transpose().col_space()
 
     def null_space(self):
         """
         Calculates the null space (AKA kernel) of a matrix A, defined as the set of all vectors for which Av = 0.
         The output is formatted as a set of "vectors" (1-column matrices) which is the basis of the null space.
         """
+        # Fact 1: the dimension of the null space = num_col - num_pivot_row
+        # Fact 2: the elements of a vector in the null space are the negative of the associated column's coefficients
+        #         and 1 for the associated free variable
+        # Fact 3: free variables are associated with non-pivot columns (indices not in self.pivot_cols())
+
+
         pass
 
     def lnull_space(self):
         """
         Calculates the left null space of a matrix A, which is equivalent to the null space of its transpose.
         """
-        pass
+        return self.transpose().null_space()
 
     """
     Determinant
     """
 
-    def strip_row(self, index):
+    def _strip_row(self, index):
         self.rows.pop(index)
 
-    def strip_col(self, index):
+    def _strip_col(self, index):
         for row in self.rows:
             row.pop(index)
 
-    def optimal_axis_calc(self):
+    def _optimal_axis_calc(self):
         transpose_mat = self.transpose()
         optimal_row = (0, 0, "row")
         optimal_col = (0, 0, "col")
@@ -732,22 +745,22 @@ class Matrix:
                 det *= self.get_val(i, i)
             return det
         else:
-            start_axis = self.optimal_axis_calc()
+            start_axis = self._optimal_axis_calc()
             axis_index, axis_type = start_axis[0], start_axis[2]
             matrix_copy = self.copy_current()
             det = 0
             if axis_type == "row":
-                matrix_copy.strip_row(axis_index)
+                matrix_copy._strip_row(axis_index)
                 for j in range(self.num_col):
                     multiplier = self.get_val(axis_index, j)
                     if multiplier != 0:
                         matrix_copy_2 = matrix_copy.copy_current()
-                        matrix_copy_2.strip_col(j)
+                        matrix_copy_2._strip_col(j)
                         if (axis_index + j) % 2 == 1:
                             multiplier *= -1
                         det += multiplier * matrix_copy_2.determinant
             elif axis_type == "col":
-                matrix_copy.strip_col(axis_index)
+                matrix_copy._strip_col(axis_index)
                 for i in range(self.num_row):
                     multiplier = self.get_val(i, axis_index)
                     if multiplier != 0:
@@ -766,24 +779,17 @@ class Matrix:
     def eigenvalues(self):
         if not self.square:
             raise SizeError("Matrix must be square in order to calculate eigenvalues")
-        subtract_matrix = IdentityMatrix(self.num_row) * np.Polynomial([0, 1])
+        subtract_matrix = Matrix.identity(self.num_row) * np.Polynomial([0, 1])
         manipulated_matrix = self - subtract_matrix
         char_eq = manipulated_matrix.determinant
         coefficients = [coef for coef in char_eq]
-        return np.polyroots(coefficients)   
+        return np.polyroots(coefficients)
 
     def eigenvectors(self):
         # Iterate through process with each eigenvalue
         # Find null space for A - lambda I
         # Combine to construct basis for eigenspace
         pass
-
-class IdentityMatrix(Matrix):
-    def __init__(self, size):
-        array = [[0 for i in range(size)] for i in range(size)]
-        for i in range(size):
-            array[i][i] = 1
-        Matrix.__init__(self, array)
 
 """
 Solving Linear Systems
