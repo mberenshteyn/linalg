@@ -39,7 +39,7 @@ class Matrix:
         else:
             for i in range(self.num_row):
                 for j in range(self.num_col):
-                    if self.get_val(i, j) != other.get_val(i, j):
+                    if self._get_val(i, j) != other._get_val(i, j):
                         return False
             return True
 
@@ -72,7 +72,7 @@ class Matrix:
         for i in range(self.num_row):
             formatted_row = []
             for j in range(self.num_col):
-                value = self.get_val(i, j)
+                value = self._get_val(i, j)
                 if type(value) is not np.Polynomial:
                     formatted_row.append(str(value))
                 else:
@@ -94,9 +94,9 @@ class Matrix:
             self.aug_matrix.cleanup()
         for i in range(self.num_row):
             for j in range(self.num_col):
-                val_ij = self.get_val(i, j)
+                val_ij = self._get_val(i, j)
                 if type(val_ij) is not np.Polynomial and val_ij == int(val_ij):
-                    self.change_val(i, j, int(val_ij))
+                    self._change_val(i, j, int(val_ij))
 
     """
     Getters
@@ -124,25 +124,25 @@ class Matrix:
         """
         return len(self.rows[0])
 
-    def get_row(self, i):
+    def _get_row(self, i):
         """
         Returns the ith row of the matrix instance as a list.
         """
         return self.rows[i]
 
-    def get_col(self, j):
+    def _get_col(self, j):
         """
         Returns the jth column of the matrix instance as a list.
         The output value (a list) should be read as the transpose of the jth column.
         """
         return [row[j] for row in self.rows]
 
-    def get_val(self, i, j):
+    def _get_val(self, i, j):
         """
         Returns the value at the ith row and jth column of the matrix instance.
 
         >>> A = Matrix([[1, 2], [3, 4]])
-        >>> A.get_val(0, 1)
+        >>> A._get_val(0, 1)
         Fraction(2, 1)
         """
         return self.rows[i][j]
@@ -151,7 +151,7 @@ class Matrix:
     Setters
     """
 
-    def change_val(self, i, j, new_val):
+    def _change_val(self, i, j, new_val):
         """
         Changes the value at the ith row and jth column of the matrix instance.
         """
@@ -160,21 +160,21 @@ class Matrix:
         else:
             self.rows[i][j] = Fraction(new_val)
 
-    def init_val(self, i, j, val):
+    def _init_val(self, i, j, val):
         """
-        Like change_val, but applies to the unchanged_rows list of lists as well.
+        Like _change_val, but applies to the unchanged_rows list of lists as well.
         Primarily for purpose of producing matrices properly after adding, subtracting, or multiplying.
         """
-        self.change_val(i, j, val)
+        self._change_val(i, j, val)
         if type(val) == np.Polynomial:
             self.unchanged_rows[i][j] = val
         else:
             self.unchanged_rows[i][j] = Fraction(val)
 
-    def change_row(self, i, new_row):
+    def _change_row(self, i, new_row):
         """
         Changes the value at the ith row with a given new row.
-        Should only ever be called as part of the swap_rows method.
+        Should only ever be called as part of the _swap_rows method.
         """
         self.rows[i] = new_row
 
@@ -182,53 +182,53 @@ class Matrix:
     Row Operations
     """
 
-    def scale_row(self, i, scal):
+    def _scale_row(self, i, scal):
         """
         Scales the ith row of the matrix instance by scal.
 
         >>> A = Matrix([[1, 2], [3, 4]])
-        >>> A.scale_row(1, 2)
+        >>> A._scale_row(1, 2)
         >>> print(A)
         [['1', '2'], ['6', '8']]
         """
         if (self.augmented):
-            self.aug_matrix.scale_row(i, scal)
-        scaled_row = [scal * val for val in self.get_row(i)]
-        self.change_row(i, scaled_row)
+            self.aug_matrix._scale_row(i, scal)
+        scaled_row = [scal * val for val in self._get_row(i)]
+        self._change_row(i, scaled_row)
         self.cleanup()
 
-    def swap_rows(self, i, j):
+    def _swap_rows(self, i, j):
         """
         Interchanges the ith and jth rows of the matrix instance.
         Should only ever be called as part of another method (e.g. gauss_elim).
 
         >>> A = Matrix([[1, 2], [3, 4]])
-        >>> A.swap_rows(0, 1)
+        >>> A._swap_rows(0, 1)
         >>> print(A)
         [['3', '4'], ['1', '2']]
         """
         if (self.augmented):
-            self.aug_matrix.swap_rows(i, j)
-        row_at_i = self.get_row(i)
-        row_at_j = self.get_row(j)
-        self.change_row(i, row_at_j)
-        self.change_row(j, row_at_i)
+            self.aug_matrix._swap_rows(i, j)
+        row_at_i = self._get_row(i)
+        row_at_j = self._get_row(j)
+        self._change_row(i, row_at_j)
+        self._change_row(j, row_at_i)
 
-    def sub_from_row(self, i, j, scal = 1):
+    def _sub_from_row(self, i, j, scal = 1):
         """
         Subtracts a scalar multiple of the jth row from the ith row of the matrix instance.
 
         >>> A = Matrix([[1, 3], [4, 4]])
-        >>> A.sub_from_row(1, 0)
-        >>> A.get_row(1)
+        >>> A._sub_from_row(1, 0)
+        >>> A._get_row(1)
         [Fraction(3, 1), Fraction(1, 1)]
         """
         if (self.augmented):
-            self.aug_matrix.sub_from_row(i, j, scal)
+            self.aug_matrix._sub_from_row(i, j, scal)
         new_row = [0 for _ in range(self.num_col)]
         for k in range(self.num_col):
-            new_row[k] = self.get_val(i, k) - scal * self.get_val(j, k)
-        self.change_row(i, new_row)
+            new_row[k] = self._get_val(i, k) - scal * self._get_val(j, k)
+        self._change_row(i, new_row)
 
     """
     Arithmetic Operations
@@ -248,7 +248,7 @@ class Matrix:
         sum = Matrix([[0 for _ in range(self.num_col)] for _ in range(self.num_row)])
         for i in range(self.num_row):
             for j in range(self.num_col):
-                sum.init_val(i, j, self.get_val(i, j) + other.get_val(i, j))
+                sum._init_val(i, j, self._get_val(i, j) + other._get_val(i, j))
         return sum
 
     def __sub__(self, other):
@@ -265,7 +265,7 @@ class Matrix:
         sub = Matrix([[0 for _ in range(self.num_col)] for _ in range(self.num_row)])
         for i in range(self.num_row):
             for j in range(self.num_col):
-                sub.init_val(i, j, self.get_val(i, j) - other.get_val(i, j))
+                sub._init_val(i, j, self._get_val(i, j) - other._get_val(i, j))
         return sub
 
     def __mul__(self, value):
@@ -281,19 +281,19 @@ class Matrix:
         [['3', '6', '9'], ['12', '15', '18']]
         """
         if isinstance(value, Matrix):
-            return self.matmul(value)
+            return self._matmul(value)
         elif type(value) == int or type(value) == float or type(value) == np.Polynomial:
-            return self.scmul(value)
+            return self._scmul(value)
         raise TypeError(f"Cannot multiply matrices by objects of type {type(value)}")
 
-    def matmul(self, other):
+    def _matmul(self, other):
         """
         Returns a new matrix of dimensions (self.num_row) x (other.num_col) produced by multiplying the values in two matrix instances.
         Requires that self.num_col == other.num_row.
 
         >>> A = Matrix([[1, 2, 3], [4, 5, 6]])
         >>> B = Matrix([[1, 4], [2, 5], [3, 6]])
-        >>> print(A.matmul(B))
+        >>> print(A._matmul(B))
         [['14', '32'], ['32', '77']]
         """
         def reduce(a, b):
@@ -310,24 +310,24 @@ class Matrix:
         product = Matrix([[0 for _ in range(other.num_col)] for _ in range(self.num_row)])
         for i in range(product.num_row):
             for j in range(product.num_col):
-                product.init_val(i, j, reduce(self.get_row(i), other.get_col(j)))
+                product._init_val(i, j, reduce(self._get_row(i), other._get_col(j)))
         product.cleanup()
         return product
 
-    def scmul(self, scal):
+    def _scmul(self, scal):
         """
         Returns a new matrix produced by multiplying every value in the matrix instance by scal.
 
         >>> A = Matrix([[1, 1], [1, 1]])
-        >>> print(A.scmul(3))
+        >>> print(A._scmul(3))
         [['3', '3'], ['3', '3']]
-        >>> print(A.scmul(0))
+        >>> print(A._scmul(0))
         [['0', '0'], ['0', '0']]
         """
         product = Matrix([[0 for _ in range(self.num_col)] for _ in range(self.num_row)])
         for i in range(product.num_row):
             for j in range(product.num_col):
-                product.init_val(i, j, scal * self.get_val(i, j))
+                product._init_val(i, j, scal * self._get_val(i, j))
         product.cleanup()
         return product
 
@@ -346,7 +346,7 @@ class Matrix:
         >>> print(B.transpose())
         [['0', '3'], ['1', '4'], ['2', '5']]
         """
-        return Matrix([self.get_col(j) for j in range(self.num_col)])
+        return Matrix([self._get_col(j) for j in range(self.num_col)])
 
     def augment(self, aug_mat):
         """
@@ -453,9 +453,9 @@ class Matrix:
             return False
         for i in range(self.num_row):
             for j in range(self.num_col):
-                if i == j and self.get_val(i, j) != 1:
+                if i == j and self._get_val(i, j) != 1:
                     return False
-                if i != j and self.get_val(i, j) != 0:
+                if i != j and self._get_val(i, j) != 0:
                     return False
         return True
 
@@ -476,7 +476,7 @@ class Matrix:
         """
         for i in range(self.num_row):
             for j in range(self.num_col):
-                if i != j and self.get_val(i, j) != 0:
+                if i != j and self._get_val(i, j) != 0:
                     return False
         return True
 
@@ -540,7 +540,7 @@ class Matrix:
         """
         for i in range(self.num_row):
             for j in range(self.num_col):
-                if j < i and self.get_val(i, j) != 0:
+                if j < i and self._get_val(i, j) != 0:
                     return False
         return True
 
@@ -561,7 +561,7 @@ class Matrix:
         """
         for i in range(self.num_row):
             for j in range(self.num_col):
-                if j > i and self.get_val(i, j) != 0:
+                if j > i and self._get_val(i, j) != 0:
                     return False
         return True
 
@@ -600,14 +600,14 @@ class Matrix:
         current_row = 0
         current_col = 0
         while (current_row < self.num_row) and (current_col < self.num_col):
-            i_max = max(range(current_row, self.num_row), key = lambda row: abs(self.get_val(row, current_col)))
-            if self.get_val(i_max, current_col) == 0:
+            i_max = max(range(current_row, self.num_row), key = lambda row: abs(self._get_val(row, current_col)))
+            if self._get_val(i_max, current_col) == 0:
                 current_col += 1
             else:
-                self.swap_rows(current_row, i_max)
+                self._swap_rows(current_row, i_max)
                 for i in range(current_row + 1, self.num_row):
-                    f = self.get_val(i, current_col) / self.get_val(current_row, current_col)
-                    self.sub_from_row(i, current_row, f)
+                    f = self._get_val(i, current_col) / self._get_val(current_row, current_col)
+                    self._sub_from_row(i, current_row, f)
                 current_row += 1
                 current_col += 1
         self.cleanup()
@@ -632,22 +632,22 @@ class Matrix:
         for index in range(self.num_row - 1, 0, -1):
             pivot, pivot_index = 1, 0
             while pivot_index < self.num_col:
-                if self.get_val(index, pivot_index) != 0:
-                    pivot = self.get_val(index, pivot_index)
+                if self._get_val(index, pivot_index) != 0:
+                    pivot = self._get_val(index, pivot_index)
                     break
                 pivot_index += 1
             if pivot_index != self.num_col:
                 for scaled_row_index in range(index -1, -1, -1):
-                    scale = (self.get_val(scaled_row_index, pivot_index) / pivot)
-                    self.sub_from_row(scaled_row_index, index, scale)
+                    scale = (self._get_val(scaled_row_index, pivot_index) / pivot)
+                    self._sub_from_row(scaled_row_index, index, scale)
         for i in range(self.num_row):
             new_pivot_index = 0
             while new_pivot_index < self.num_col:
-                if self.get_val(i, new_pivot_index) != 0:
+                if self._get_val(i, new_pivot_index) != 0:
                     break
                 new_pivot_index += 1
             if new_pivot_index != self.num_col:
-                self.scale_row(i, 1 / self.get_val(i, new_pivot_index))
+                self._scale_row(i, 1 / self._get_val(i, new_pivot_index))
         self.cleanup()
         self.rref = True
 
@@ -655,7 +655,7 @@ class Matrix:
     Fundamental Matrix Spaces
     """
 
-    def pivot_cols(self):
+    def _pivot_cols(self):
         """
         Returns a list of pivot columns (by index) in the matrix object.
         """
@@ -665,7 +665,7 @@ class Matrix:
         pivot_cols = []
         for i in range(copy.num_row):
             for j in range(copy.num_col):
-                if copy.get_val(i, j) == 1:
+                if copy._get_val(i, j) == 1:
                     pivot_cols.append(j)
                     break
         return pivot_cols
@@ -676,10 +676,10 @@ class Matrix:
         This is done by finding the pivot columns of the matrix.
         The output is formatted as a set of "vectors" (1-column matrices) which is the basis of the column space.
         """
-        pivot_indices = self.pivot_cols()
+        pivot_indices = self._pivot_cols()
         basis = []
         for index in pivot_indices:
-            basis.append(self.get_col(index)) #Can't add lists - either don't use sets or define as matrices
+            basis.append(self._get_col(index)) #Can't add lists - either don't use sets or define as matrices
         return basis
 
     def row_space(self):
@@ -723,8 +723,8 @@ class Matrix:
         optimal_row = (0, 0, "row")
         optimal_col = (0, 0, "col")
         for i in range(self.num_row):
-            row_zeros = self.get_row(i).count(0)
-            col_zeros = transpose_mat.get_row(i).count(0)
+            row_zeros = self._get_row(i).count(0)
+            col_zeros = transpose_mat._get_row(i).count(0)
             if row_zeros > optimal_row[1]:
                 optimal_row = (i, row_zeros, "row")
             if col_zeros > optimal_col[1]:
@@ -736,13 +736,13 @@ class Matrix:
         if not self.square:
             raise SizeError("Non-square matrices do not have calculable determinants")
         elif self.num_row == 1 and self.num_col == 1:
-            return self.get_val(0, 0)
+            return self._get_val(0, 0)
         elif self.num_row == 2 and self.num_col == 2:
-            return (self.get_val(0, 0) * self.get_val(1, 1)) - (self.get_val(0, 1) * self.get_val(1, 0))
+            return (self._get_val(0, 0) * self._get_val(1, 1)) - (self._get_val(0, 1) * self._get_val(1, 0))
         elif self.upper_tri or self.lower_tri:
             det = 1
             for i in range(self.num_row):
-                det *= self.get_val(i, i)
+                det *= self._get_val(i, i)
             return det
         else:
             start_axis = self._optimal_axis_calc()
@@ -752,7 +752,7 @@ class Matrix:
             if axis_type == "row":
                 matrix_copy._strip_row(axis_index)
                 for j in range(self.num_col):
-                    multiplier = self.get_val(axis_index, j)
+                    multiplier = self._get_val(axis_index, j)
                     if multiplier != 0:
                         matrix_copy_2 = matrix_copy.copy_current()
                         matrix_copy_2._strip_col(j)
@@ -762,10 +762,10 @@ class Matrix:
             elif axis_type == "col":
                 matrix_copy._strip_col(axis_index)
                 for i in range(self.num_row):
-                    multiplier = self.get_val(i, axis_index)
+                    multiplier = self._get_val(i, axis_index)
                     if multiplier != 0:
                         matrix_copy_2 = matrix_copy.copy_current()
-                        matrix_copy_2.strip_row(i)
+                        matrix_copy_2._strip_row(i)
                         if (i + axis_index) % 2 == 1:
                             multiplier *= -1
                         det += multiplier * matrix_copy_2.determinant
@@ -835,11 +835,11 @@ def format_as_linear_sys(A):
     Prints an augmented matrix A as a linear system. Mostly for debugging/early versions, so this is a lazy function description.
     """
     for i in range(A.num_row):
-        if [0 for j in range(A.num_col)] == A.get_row(i):
+        if [0 for j in range(A.num_col)] == A._get_row(i):
             continue
         row_string = ""
         for j in range(A.num_col):
-            coef = A.get_val(i, j)
+            coef = A._get_val(i, j)
             if j < A.num_col - 1:
                 if coef == 0:
                     continue
@@ -889,10 +889,10 @@ def check_consistency(aug_matrix):
         nonzero_coef = False
         for j in range(aug_matrix.num_col):
             if j < aug_matrix.num_col - 1:
-                if aug_matrix.get_val(i, j) != 0:
+                if aug_matrix._get_val(i, j) != 0:
                     nonzero_coef = True
             if j == aug_matrix.num_col - 1:
-                if aug_matrix.get_val(i, j) == 0:
+                if aug_matrix._get_val(i, j) == 0:
                     continue
                 else:
                     if nonzero_coef:
