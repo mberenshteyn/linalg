@@ -348,13 +348,13 @@ class Matrix:
         """
         return Matrix([self._get_col(j) for j in range(self.num_col)])
 
-    def augment(self, aug_mat):
+    def _augment(self, aug_mat):
         """
         Augments a matrix to the right of the existing matrix instance.
 
         >>> A = Matrix([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
         >>> v = Matrix([[4], [3], [2]])
-        >>> A.augment(v)
+        >>> A._augment(v)
         >>> print(A.aug_matrix)
         [['4'], ['3'], ['2']]
         """
@@ -362,14 +362,14 @@ class Matrix:
         assert self.aug_matrix == None, f"The matrix instance is already augmented"
         self.aug_matrix = aug_mat
 
-    def deaugment(self):
+    def _deaugment(self):
         """
         Clears the augmented matrix if it exists, otherwise does nothing.
 
         >>> A = Matrix([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
         >>> v = Matrix([[4], [3], [2]])
-        >>> A.augment(v)
-        >>> A.deaugment()
+        >>> A._augment(v)
+        >>> A._deaugment()
         >>> print(A.aug_matrix == None)
         True
         """
@@ -396,7 +396,7 @@ class Matrix:
             return None
 
         mat_copy = self.copy_current()
-        mat_copy.augment(Matrix.identity(self.num_row))
+        mat_copy._augment(Matrix.identity(self.num_row))
 
         mat_copy.gauss_elim()
         mat_copy.back_sub()
@@ -867,7 +867,7 @@ def solve_linear_sys(A, v = 0):
     if v == 0:
         v = [0 for _ in range(A.num_row)]
     aug_matrix = A.copy()
-    aug_matrix.augment(v)
+    aug_matrix._augment(v)
     print("Given a linear system")
     format_as_linear_sys(aug_matrix)
     aug_matrix.gauss_elim()
