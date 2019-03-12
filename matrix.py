@@ -13,10 +13,20 @@ class Matrix:
 
     @classmethod
     def identity(self, size):
-        array = [[0 for i in range(size)] for i in range(size)]
+        elements = [[0 for i in range(size)] for i in range(size)]
         for i in range(size):
-            array[i][i] = 1
-        return Matrix(array)
+            elements[i][i] = 1
+        return Matrix(elements)
+
+    @classmethod
+    def colVector(self, array):
+        elements = [[el] for el in array]
+        return Matrix(elements)
+
+    @classmethod
+    def rowVector(self, array):
+        elements = [array]
+        return Matrix(elements)
 
     def __eq__(self, other):
         """
@@ -43,14 +53,16 @@ class Matrix:
                         return False
             return True
 
-    def copy(self):
+    @classmethod
+    def copy(self, mat):
         """
         Returns a new Matrix object with the same dimensions and values as the current Matrix instance.
         """
-        return Matrix(self.unchanged_rows)
+        return Matrix(mat.unchanged_rows)
 
-    def copy_current(self):
-        return Matrix(self.rows)
+    @classmethod
+    def copy_current(self, mat):
+        return Matrix(mat.rows)
 
     """
     Display Methods
@@ -126,16 +138,16 @@ class Matrix:
 
     def _get_row(self, i):
         """
-        Returns the ith row of the matrix instance as a list.
+        Returns the ith row of the matrix instance as a row vector matrix.
         """
-        return self.rows[i]
+        return Matrix.rowVector(self.rows[i])
 
     def _get_col(self, j):
         """
-        Returns the jth column of the matrix instance as a list.
-        The output value (a list) should be read as the transpose of the jth column.
+        Returns the jth column of the matrix instance as a column vector matrix.
         """
-        return [row[j] for row in self.rows]
+        elements = [row[j] for row in self.rows]
+        return Matrix.colVector(elements)
 
     def _get_val(self, i, j):
         """
@@ -176,7 +188,10 @@ class Matrix:
         Changes the value at the ith row with a given new row.
         Should only ever be called as part of the _swap_rows method.
         """
-        self.rows[i] = new_row
+        assert new_row.num_row == 1
+        for j in range(new_row.num_col):
+            newVal = new_row._get_val(0, j)
+            self._change_val(i, j, newVal)
 
     """
     Row Operations
@@ -193,7 +208,8 @@ class Matrix:
         """
         if (self.augmented):
             self.aug_matrix._scale_row(i, scal)
-        scaled_row = [scal * val for val in self._get_row(i)]
+        scaled_row_as_list = [scal * self._get_val(i, j) for j in range(self.num_col)]
+        scaled_row = Matrix.rowVector(scaled_row_as_list)
         self._change_row(i, scaled_row)
         self.cleanup()
 
@@ -220,14 +236,15 @@ class Matrix:
 
         >>> A = Matrix([[1, 3], [4, 4]])
         >>> A._sub_from_row(1, 0)
-        >>> A._get_row(1)
-        [Fraction(3, 1), Fraction(1, 1)]
+        >>> print(A)
+        [['1', '3'], ['3', '1']]
         """
         if (self.augmented):
             self.aug_matrix._sub_from_row(i, j, scal)
-        new_row = [0 for _ in range(self.num_col)]
+        new_row_as_list = [0 for _ in range(self.num_col)]
         for k in range(self.num_col):
-            new_row[k] = self._get_val(i, k) - scal * self._get_val(j, k)
+            new_row_as_list[k] = self._get_val(i, k) - scal * self._get_val(j, k)
+        new_row = Matrix.rowVector(new_row_as_list)
         self._change_row(i, new_row)
 
     """
@@ -298,14 +315,23 @@ class Matrix:
         """
         def reduce(a, b):
             """
-            Returns the sum of the products of corresponding elements in lists a and b.
+            Returns the sum of the products of corresponding elements in row vector a and column vector b.
 
-            >>> reduce([1, 1], [2, 2])
+            >>> a = Matrix.rowVector([1, 1])
+            >>> b = Matrix.colVector([2, 2])
+            >>> reduce(a, b)
             4
-            >>> reduce([1, 2, 3], [1, 5, 3])
+            >>> c = Matrix.rowVector([1, 2, 3])
+            >>> d = Matrix.colVector([1, 5, 3])
+            >>> reduce(c, d)
             20
             """
-            return sum([(a[i] * b[i]) for i in range(len(a))])
+            assert a.num_col == b.num_row, "Both vectors should be of equal length"
+            tot = 0
+            for i in range(a.num_col):
+                product = a._get_val(0, i) * b._get_val(i, 0)
+                tot += product
+            return tot
         assert self.num_col == other.num_row, "The number of columns in the first matrix must equal the number of rows in the second matrix for multiplication to work correctly"
         product = Matrix([[0 for _ in range(other.num_col)] for _ in range(self.num_row)])
         for i in range(product.num_row):
@@ -346,7 +372,11 @@ class Matrix:
         >>> print(B.transpose())
         [['0', '3'], ['1', '4'], ['2', '5']]
         """
-        return Matrix([self._get_col(j) for j in range(self.num_col)])
+        new_array = [[0 for _ in range(self.num_row)] for _ in range(self.num_col)]
+        for i in range(self.num_row):
+            for j in range(self.num_col):
+                new_array[j][i] = self._get_val(i, j)
+        return Matrix(new_array)
 
     def _augment(self, aug_mat):
         """
@@ -395,7 +425,7 @@ class Matrix:
         elif self.determinant == 0:
             return None
 
-        mat_copy = self.copy_current()
+        mat_copy = Matrix.copy_current(self)
         mat_copy._augment(Matrix.identity(self.num_row))
 
         mat_copy.gauss_elim()
@@ -657,7 +687,7 @@ class Matrix:
         """
         Returns a list of pivot columns (by index) in the matrix object.
         """
-        copy = self.copy()
+        copy = Matrix.copy(self)
         copy.gauss_elim()
         copy.back_sub()
         pivot_cols = []
@@ -677,7 +707,7 @@ class Matrix:
         pivot_indices = self._pivot_cols()
         basis = []
         for index in pivot_indices:
-            basis.append(self._get_col(index)) #Can't add lists - either don't use sets or define as matrices
+            basis.append(self._get_col(index))
         return basis
 
     def row_space(self):
@@ -716,13 +746,20 @@ class Matrix:
         for row in self.rows:
             row.pop(index)
 
+    def _count_zeros(self):
+        count = 0
+        for i in range(self.num_row):
+            for j in range(self.num_col):
+                if self._get_val(i, j) == 0:
+                    count += 1
+        return count
+
     def _optimal_axis_calc(self):
-        transpose_mat = self.transpose()
         optimal_row = (0, 0, "row")
         optimal_col = (0, 0, "col")
         for i in range(self.num_row):
-            row_zeros = self._get_row(i).count(0)
-            col_zeros = transpose_mat._get_row(i).count(0)
+            row_zeros = self._get_row(i)._count_zeros()
+            col_zeros = self._get_col(i)._count_zeros()
             if row_zeros > optimal_row[1]:
                 optimal_row = (i, row_zeros, "row")
             if col_zeros > optimal_col[1]:
@@ -745,14 +782,14 @@ class Matrix:
         else:
             start_axis = self._optimal_axis_calc()
             axis_index, axis_type = start_axis[0], start_axis[2]
-            matrix_copy = self.copy_current()
+            matrix_copy = Matrix.copy_current(self)
             det = 0
             if axis_type == "row":
                 matrix_copy._strip_row(axis_index)
                 for j in range(self.num_col):
                     multiplier = self._get_val(axis_index, j)
                     if multiplier != 0:
-                        matrix_copy_2 = matrix_copy.copy_current()
+                        matrix_copy_2 = Matrix.copy_current(matrix_copy)
                         matrix_copy_2._strip_col(j)
                         if (axis_index + j) % 2 == 1:
                             multiplier *= -1
@@ -762,7 +799,7 @@ class Matrix:
                 for i in range(self.num_row):
                     multiplier = self._get_val(i, axis_index)
                     if multiplier != 0:
-                        matrix_copy_2 = matrix_copy.copy_current()
+                        matrix_copy_2 = Matrix.copy_current(matrix_copy)
                         matrix_copy_2._strip_row(i)
                         if (i + axis_index) % 2 == 1:
                             multiplier *= -1
@@ -866,7 +903,7 @@ def solve_linear_sys(A, v = 0):
     """
     if v == 0:
         v = [0 for _ in range(A.num_row)]
-    aug_matrix = A.copy()
+    aug_matrix = Matrix.copy(A)
     aug_matrix._augment(v)
     print("Given a linear system")
     format_as_linear_sys(aug_matrix)
