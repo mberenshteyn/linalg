@@ -1,4 +1,5 @@
 from fractions import *
+from typing import List
 import numpy.polynomial.polynomial as np
 
 class Matrix:
@@ -7,31 +8,42 @@ class Matrix:
     Constructors
     """
 
-    def __init__(self, array, aug = None):
+    def __init__(self, array: List, aug: Matrix = None) -> Matrix:
         self.rows = [[Fraction(val) if type(val) != np.Polynomial else val for val in row] for row in array]
         self.unchanged_rows = [[Fraction(val) if type(val) != np.Polynomial else val for val in row] for row in array] #Never change this variable!
         self.aug_matrix = aug
         self.cleanup()
 
     @classmethod
-    def identity(cls, size):
+    def identity(cls, size: int) -> Matrix:
         elements = [[0 for i in range(size)] for i in range(size)]
         for i in range(size):
             elements[i][i] = 1
         return Matrix(elements)
 
     @classmethod
-    def col_vector(cls, array):
+    def diagonal(cls, array: List) -> Matrix:
+        dim : int = len(array)
+        rows = []
+        for index, value in enumerate(array):
+            row = [0 for _ in range(dim)]
+            row[index] = value
+            rows.append(row)
+        return Matrix(rows)
+
+
+    @classmethod
+    def col_vector(cls, array: List) -> Matrix:
         elements = [[el] for el in array]
         return Matrix(elements)
 
     @classmethod
-    def row_vector(cls, array):
+    def row_vector(cls, array: List) -> Matrix:
         elements = [array]
         return Matrix(elements)
 
     @classmethod
-    def copy(cls, mat):
+    def copy(cls, mat: Matrix) -> Matrix:
         """
         Returns a new Matrix object with the same dimensions and values as the initialized Matrix instance.
         Does not retain augments.
@@ -39,7 +51,7 @@ class Matrix:
         return Matrix(mat.unchanged_rows)
 
     @classmethod
-    def copy_current(cls, mat):
+    def copy_current(cls, mat: Matrix) -> Matrix:
         """
         Returns a new Matrix object with the same dimensions and values as the current Matrix instance.
         Does not retain augments.
@@ -50,13 +62,13 @@ class Matrix:
     Display Methods
     """
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         Returns the matrix instance as represented by a list of lists (rows).
         """
         return str([[str(val) for val in row] for row in self.rows])
 
-    def print_nice(self):
+    def print_nice(self) -> None:
         """
         Prints the rows one-by-one for ease of reading in shell.
         """
@@ -70,7 +82,7 @@ class Matrix:
                     formatted_row.append(polynomial_format(value))
             print(str(formatted_row))
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """
         Iterates through every value in the matrix instance to round numbers to 12 digits.
         Also converts redundant floats (e.g. 1.0, -0.0) into ints.
@@ -88,33 +100,33 @@ class Matrix:
     """
 
     @property
-    def num_row(self):
+    def num_row(self) -> int:
         """
         Returns the number of rows in the matrix instance.
         """
         return len(self.rows)
 
     @property
-    def num_col(self):
+    def num_col(self) -> int:
         """
         Returns the number of columns in the matrix instance.
         """
         return len(self.rows[0])
 
-    def _get_row(self, i):
+    def _get_row(self, i: int) -> Matrix:
         """
         Returns the ith row of the matrix instance as a row vector matrix.
         """
         return Matrix.row_vector(self.rows[i])
 
-    def _get_col(self, j):
+    def _get_col(self, j: int): -> Matrix
         """
         Returns the jth column of the matrix instance as a column vector matrix.
         """
         elements = [row[j] for row in self.rows]
         return Matrix.col_vector(elements)
 
-    def _get_val(self, i, j):
+    def _get_val(self, i: int, j: int): -> Matrix
         """
         Returns the value at the ith row and jth column of the matrix instance.
         """
@@ -124,7 +136,7 @@ class Matrix:
     Setters
     """
 
-    def _change_val(self, i, j, new_val):
+    def _change_val(self, i: int, j: int, new_val) -> None:
         """
         Changes the value at the ith row and jth column of the matrix instance.
         """
@@ -133,7 +145,7 @@ class Matrix:
         else:
             self.rows[i][j] = Fraction(new_val)
 
-    def _init_val(self, i, j, val):
+    def _init_val(self, i: int, j: int, val) -> None:
         """
         Like _change_val, but applies to the unchanged_rows list of lists as well.
         Primarily for purpose of producing matrices properly after adding, subtracting, or multiplying.
@@ -144,7 +156,7 @@ class Matrix:
         else:
             self.unchanged_rows[i][j] = Fraction(val)
 
-    def _change_row(self, i, new_row):
+    def _change_row(self, i: int, new_row: Matrix) -> None:
         """
         Changes the value at the ith row with a given new row.
         Should only ever be called as part of the _swap_rows method.
@@ -158,7 +170,7 @@ class Matrix:
     Row Operations
     """
 
-    def _scale_row(self, i, scal):
+    def _scale_row(self, i: int, scal) -> None:
         """
         Scales the ith row of the matrix instance by scal.
         """
@@ -169,10 +181,9 @@ class Matrix:
         self._change_row(i, scaled_row)
         self.cleanup()
 
-    def _swap_rows(self, i, j):
+    def _swap_rows(self, i: int, j: int) -> None:
         """
         Interchanges the ith and jth rows of the matrix instance.
-        Should only ever be called as part of another method (e.g. gauss_elim).
         """
         if (self.aug_matrix is not None):
             self.aug_matrix._swap_rows(i, j)
@@ -181,7 +192,7 @@ class Matrix:
         self._change_row(i, row_at_j)
         self._change_row(j, row_at_i)
 
-    def _sub_from_row(self, i, j, scal = 1):
+    def _sub_from_row(self, i: int, j: int, scal = 1) -> None:
         """
         Subtracts a scalar multiple of the jth row from the ith row of the matrix instance.
         """
@@ -197,7 +208,7 @@ class Matrix:
     Arithmetic Operations
     """
 
-    def __eq__(self, other):
+    def __eq__(self, other: Matrix) -> bool:
         """
         Returns True if both matrices have the same dimensions and consist of the same values.
         """
@@ -214,7 +225,7 @@ class Matrix:
                         return False
             return True
 
-    def __add__(self, other):
+    def __add__(self, other: Matrix) -> Matrix:
         """
         Returns a new matrix produced by summing the values in two matrix instances.
         Requires that the two matrices have the same dimensions.
@@ -227,7 +238,7 @@ class Matrix:
                 sum._init_val(i, j, self._get_val(i, j) + other._get_val(i, j))
         return sum
 
-    def __sub__(self, other):
+    def __sub__(self, other: Matrix) -> Matrix:
         """
         Returns a new matrix produced by subtracting the values in two matrix instances.
         Requires that the two matrices have the same dimensions.
@@ -240,7 +251,7 @@ class Matrix:
                 sub._init_val(i, j, self._get_val(i, j) - other._get_val(i, j))
         return sub
 
-    def __mul__(self, other):
+    def __mul__(self, other) -> Matrix:
         """
         Chooses the appropriate matrix multiplication method, based on whether the given value is another matrix or a number.
         If the value is of any other type, the operation raises a TypeError.
@@ -251,14 +262,14 @@ class Matrix:
             return self._scmul(other)
         raise TypeError(f"Cannot multiply matrices by objects of type {type(other)}")
 
-    def __rmul__(self, other):
+    def __rmul__(self, other) -> Matrix:
         """
         An alternative to the __mul__ method, used particularly if a scalar or polynomial is the preceding value.
         Calls upon __mul__ for functionality.
         """
         return self * other
 
-    def _matmul(self, other):
+    def _matmul(self, other: Matrix) -> Matrix:
         """
         Returns a new matrix of dimensions (self.num_row) x (other.num_col) produced by multiplying the values in two matrix instances.
         Requires that self.num_col == other.num_row
@@ -272,7 +283,7 @@ class Matrix:
         product.cleanup()
         return product
 
-    def _scmul(self, scal):
+    def _scmul(self, scal) -> Matrix:
         """
         Returns a new matrix produced by multiplying every value in the matrix instance by scal.
         """
@@ -300,7 +311,7 @@ class Matrix:
         for row in self.rows:
             row.pop(i)
 
-    def _augment(self, aug_mat):
+    def _augment(self, aug_mat: Matrix) -> None:
         """
         Augments a matrix to the right of the existing matrix instance.
         """
@@ -309,7 +320,7 @@ class Matrix:
         assert self.aug_matrix == None, f"The matrix instance is already augmented"
         self.aug_matrix = aug_mat
 
-    def _deaugment(self):
+    def _deaugment(self) -> None:
         """
         Clears the augmented matrix if it exists, otherwise does nothing.
         """
