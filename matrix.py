@@ -287,6 +287,19 @@ class Matrix:
     Misc Methods
     """
 
+    def _del_row(self, i: int) -> None:
+        """
+        Removes the row corresponding with index i from matrix A.
+        """
+        self.rows.pop(i)
+
+    def _del_col(self, i: int) -> None:
+        """
+        Removes the column corresponding with index i from matrix A.
+        """
+        for row in self.rows:
+            row.pop(i)
+
     def _augment(self, aug_mat):
         """
         Augments a matrix to the right of the existing matrix instance.

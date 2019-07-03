@@ -34,21 +34,6 @@ class LinAlg:
         return mat_copy.aug_matrix
 
     @staticmethod
-    def _strip_row(A: Matrix, i: int) -> None:
-        """
-        Removes the row corresponding with index i from matrix A.
-        """
-        A.rows.pop(i)
-
-    @staticmethod
-    def _strip_col(A: Matrix, index: int) -> None:
-        """
-        Removes the column corresponding with index i from matrix A.
-        """
-        for row in A.rows:
-            row.pop(i)
-
-    @staticmethod
     def _count_zeros(A: Matrix) -> int:
         """
         Returns the number of elements equal to 0 in matrix A.
@@ -99,22 +84,22 @@ class LinAlg:
             matrix_copy = Matrix.copy_current(A)
             det = 0
             if axis_type == "row":
-                LinAlg._strip_row(matrix_copy, axis_index)
+                matrix_copy._del_row(axis_index)
                 for j in range(A.num_col):
                     multiplier = A._get_val(axis_index, j)
                     if multiplier != 0:
                         matrix_copy_2 = Matrix.copy_current(matrix_copy)
-                        LinAlg._strip_col(matrix_copy_2, j)
+                        matrix_copy_2._del_col(j)
                         if (axis_index + j) % 2 == 1:
                             multiplier *= -1.
                         det += multiplier * LinAlg.determinant(matrix_copy_2)
             elif axis_type == "col":
-                LinAlg._strip_col(matrix_copy, axis_index)
+                matrix_copy._del_col(axis_index)
                 for i in range(A.num_row):
                     multiplier = A._get_val(i, axis_index)
                     if multiplier != 0:
                         matrix_copy_2 = Matrix.copy_current(matrix_copy)
-                        LinAlg._strip_row(matrix_copy_2, i)
+                        matrix_copy_2._del_row(i)
                         if (i + axis_index) % 2 == 1:
                             multiplier *= -1.
                         det += multiplier * LinAlg.determinant(matrix_copy_2)

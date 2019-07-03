@@ -43,32 +43,6 @@ class MatProperties:
                         return False
             return True
 
-        # @staticmethod
-        # def check_ref(A: Matrix) -> bool:
-        #     """
-        #     Returns True if the matrix instance is in row echelon form, and False otherwise.
-        #     If the return value is True, the matrix instance meets the following conditions:
-        #         1) All nonzero rows are above any rows of all zeros.
-        #         2) Each leading entry of a row is in a column right of the leading entry in the above row.
-        #         3) All entries in a column before a leading entry are zeros.
-        #     """
-        #     eval_matrix = Matrix(A.unchanged_rows)
-        #     LinAlg.gauss_elim(eval_matrix)
-        #     return A == eval_matrix
-        #
-        # @staticmethod
-        # def check_rref(A: Matrix) -> bool:
-        #     """
-        #     Returns True if the matrix instance is in reduced row echelon form, and False otherwise.
-        #     If the return value is True, the matrix instance meets conditions of row echelon form as well as the following:
-        #         4) The leading entry in each nonzero row is 1.
-        #         5) Each leading 1 is the only entry in its column.
-        #     """
-        #     eval_matrix = Matrix(A.unchanged_rows)
-        #     LinAlg.gauss_elim(eval_matrix)
-        #     LinAlg.back_sub(eval_matrix)
-        #     return A == eval_matrix
-
         @staticmethod
         def upper_tri(A: Matrix) -> bool:
             """
