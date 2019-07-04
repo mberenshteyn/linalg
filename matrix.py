@@ -1,3 +1,4 @@
+from __future__ import annotations
 from fractions import *
 from typing import List
 import numpy.polynomial.polynomial as np
@@ -10,7 +11,7 @@ class Matrix:
 
     def __init__(self, array: List, aug: Matrix = None) -> Matrix:
         self.rows = [[Fraction(val) if type(val) != np.Polynomial else val for val in row] for row in array]
-        self.unchanged_rows = [[Fraction(val) if type(val) != np.Polynomial else val for val in row] for row in array] #Never change this variable!
+        self.unchanged_rows = [[Fraction(val) if type(val) != np.Polynomial else val for val in row] for row in array]
         self.aug_matrix = aug
         self.cleanup()
 
@@ -31,7 +32,6 @@ class Matrix:
             rows.append(row)
         return Matrix(rows)
 
-
     @classmethod
     def col_vector(cls, array: List) -> Matrix:
         elements = [[el] for el in array]
@@ -41,6 +41,26 @@ class Matrix:
     def row_vector(cls, array: List) -> Matrix:
         elements = [array]
         return Matrix(elements)
+
+    @classmethod
+    def merge_cols(cls, array: List[Matrix]) -> Matrix:
+        col_count = len(array)
+        row_count = array[0].num_row
+        base = [[0 for _ in range(col_count)] for _ in range(row_count)]
+        base_matrix = Matrix(base)
+        for index, vector in enumerate(array):
+            base_matrix._change_col(index, vector, True)
+        return base_matrix
+
+    @classmethod
+    def merge_rows(cls, array: List[Matrix]) -> Matrix:
+        row_count = len(array)
+        col_count = array[0].num_col
+        base = [[0 for _ in range(col_count)] for _ in range(row_count)]
+        base_matrix = Matrix(base)
+        for index, vector in enumerate(array):
+            base_matrix._change_row(index, vector, True)
+        return base_matrix
 
     @classmethod
     def copy(cls, mat: Matrix) -> Matrix:
@@ -119,14 +139,14 @@ class Matrix:
         """
         return Matrix.row_vector(self.rows[i])
 
-    def _get_col(self, j: int): -> Matrix
+    def _get_col(self, j: int) -> Matrix:
         """
         Returns the jth column of the matrix instance as a column vector matrix.
         """
         elements = [row[j] for row in self.rows]
         return Matrix.col_vector(elements)
 
-    def _get_val(self, i: int, j: int): -> Matrix
+    def _get_val(self, i: int, j: int) -> Matrix:
         """
         Returns the value at the ith row and jth column of the matrix instance.
         """
@@ -156,15 +176,29 @@ class Matrix:
         else:
             self.unchanged_rows[i][j] = Fraction(val)
 
-    def _change_row(self, i: int, new_row: Matrix) -> None:
+    def _change_row(self, i: int, new_row: Matrix, init_values: bool = False) -> None:
         """
         Changes the value at the ith row with a given new row.
-        Should only ever be called as part of the _swap_rows method.
         """
         assert new_row.num_row == 1
         for j in range(new_row.num_col):
             newVal = new_row._get_val(0, j)
-            self._change_val(i, j, newVal)
+            if init_values:
+                self._init_val(i, j, newVal)
+            else:
+                self._change_val(i, j, newVal)
+
+    def _change_col(self, j: int, new_col: Matrix, init_values: bool = False) -> None:
+        """
+        Changes the value at the jth column with a given new column.
+        """
+        assert new_col.num_col == 1
+        for i in range(new_col.num_row):
+            newVal = new_col._get_val(i, 0)
+            if init_values:
+                self._init_val(i, j, newVal)
+            else:
+                self._change_val(i, j, newVal)
 
     """
     Row Operations
@@ -278,7 +312,7 @@ class Matrix:
         product = Matrix([[0 for _ in range(other.num_col)] for _ in range(self.num_row)])
         for i in range(product.num_row):
             for j in range(product.num_col):
-                sum_corr_prod = sum([x * y for x, y in zip(self._get_row(i), other._get_col(j))])
+                sum_corr_prod = self._sum_corr_prod(other, i, j)
                 product._init_val(i, j, sum_corr_prod)
         product.cleanup()
         return product
@@ -294,19 +328,27 @@ class Matrix:
         product.cleanup()
         return product
 
+    def _sum_corr_prod(self, other: Matrix, i: int, j: int) -> int:
+        row = self._get_row(i)
+        col = other._get_col(j)
+        sum = 0
+        for z in range(row.num_col):
+            sum += (row._get_val(0, z) * col._get_val(z, 0))
+        return sum
+
     """
     Misc Methods
     """
 
     def _del_row(self, i: int) -> None:
         """
-        Removes the row corresponding with index i from matrix A.
+        Removes the row corresponding with index i from the matrix instance.
         """
         self.rows.pop(i)
 
     def _del_col(self, i: int) -> None:
         """
-        Removes the column corresponding with index i from matrix A.
+        Removes the column corresponding with index i from the matrix instance.
         """
         for row in self.rows:
             row.pop(i)

@@ -1,6 +1,6 @@
 from matrix import Matrix
 from matproperties import MatProperties
-from typing import List
+from typing import List, Tuple
 
 from numpy import iscomplex
 import numpy.polynomial.polynomial as np
@@ -242,7 +242,7 @@ class LinAlg:
     @staticmethod
     def eigenvalues(A: Matrix) -> List:
         if not MatProperties.square(A):
-            raise SizeError("Matrix must be square in order to calculate eigenvalues")
+            raise ValueError("Matrix must be square in order to calculate eigenvalues")
         subtract_matrix = Matrix.identity(A.num_row) * np.Polynomial([0., 1.])
         manipulated_matrix = A - subtract_matrix
         char_eq = LinAlg.determinant(manipulated_matrix)
@@ -263,7 +263,7 @@ class LinAlg:
         return true_roots
 
     @staticmethod
-    def eigenvectors(A: Matrix) -> List:
+    def eigenvectors(A: Matrix) -> List[Matrix]:
         if not MatProperties.square(A):
             raise ValueError("Matrix must be square in order to calculate eigenvectors")
         eigenbasis = []
@@ -272,3 +272,17 @@ class LinAlg:
             current = A - (identity * ev.item())
             eigenbasis.extend(LinAlg.null_space(current))
         return eigenbasis
+
+    @staticmethod
+    def diagonalize(A: Matrix) -> Tuple[Matrix]:
+        if not MatProperties.square(A):
+            raise ValueError("Matrix must be square in order to diagonalize")
+        evalues = LinAlg.eigenvalues(A)
+        evectors = LinAlg.eigenvectors(A)
+        if len(evalues) != A.num_row or len(evectors) != A.num_row:
+            raise ValueError(f"Matrix must have {A.num_row} eigenvalues \
+            and eigenvectors to be diagonalized")
+        pre_matrix = Matrix.merge_cols(evectors)
+        post_matrix = LinAlg.inverse(pre_matrix)
+        diag_matrix = Matrix.diagonal(evalues)
+        return pre_matrix, diag_matrix, post_matrix
