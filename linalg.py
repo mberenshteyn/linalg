@@ -231,6 +231,10 @@ class LinAlg:
 
     @staticmethod
     def check_eigenvalue(A: Matrix, value) -> bool:
+        """
+        Verifies whether value is an eigenvalue of matrix A. Returns True if the determinant of
+        A - value times the identity matrix is 0, and False otherwise.
+        """
         if not MatProperties.square(A):
             raise ValueError("Matrix must be square in order to have eigenvalues")
         subtract_matrix = Matrix.identity(A.num_row) * value
@@ -241,6 +245,9 @@ class LinAlg:
 
     @staticmethod
     def eigenvalues(A: Matrix) -> List:
+        """
+        Returns the list of eigenvalues of matrix A.
+        """
         if not MatProperties.square(A):
             raise ValueError("Matrix must be square in order to calculate eigenvalues")
         subtract_matrix = Matrix.identity(A.num_row) * np.Polynomial([0., 1.])
@@ -264,6 +271,10 @@ class LinAlg:
 
     @staticmethod
     def eigenvectors(A: Matrix) -> List[Matrix]:
+        """
+        Returns the list of eigenvectors of matrix A, for each of which A times the eigenvector
+        equals a scalar multiple of the eigenvector.
+        """
         if not MatProperties.square(A):
             raise ValueError("Matrix must be square in order to calculate eigenvectors")
         eigenbasis = []
@@ -275,6 +286,10 @@ class LinAlg:
 
     @staticmethod
     def diagonalize(A: Matrix) -> Tuple[Matrix]:
+        """
+        Displays matrix A as a product of three square matrices. Returns each matrix as
+        a corresponding element of a tuple.
+        """
         if not MatProperties.square(A):
             raise ValueError("Matrix must be square in order to diagonalize")
         evalues = LinAlg.eigenvalues(A)

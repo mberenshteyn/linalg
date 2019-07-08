@@ -10,6 +10,10 @@ class Matrix:
     """
 
     def __init__(self, array: List, aug: Matrix = None) -> Matrix:
+        """
+        Takes in a list of lists of values to form the rows of a Matrix object.
+        Optional argument allows to augment the object with another Matrix.
+        """
         self.rows = [[Fraction(val) if type(val) != np.Polynomial else val for val in row] for row in array]
         self.unchanged_rows = [[Fraction(val) if type(val) != np.Polynomial else val for val in row] for row in array]
         self.aug_matrix = aug
@@ -17,6 +21,9 @@ class Matrix:
 
     @classmethod
     def identity(cls, size: int) -> Matrix:
+        """
+        Special constructor to form an identity matrix with row/col count equal to size.
+        """
         elements = [[0 for i in range(size)] for i in range(size)]
         for i in range(size):
             elements[i][i] = 1
@@ -24,6 +31,10 @@ class Matrix:
 
     @classmethod
     def diagonal(cls, array: List) -> Matrix:
+        """
+        Special constructor to form a square matrix of row/column count equal to the length
+        of the input array. Values in the array are placed along the diagonal.
+        """
         dim : int = len(array)
         rows = []
         for index, value in enumerate(array):
@@ -34,16 +45,28 @@ class Matrix:
 
     @classmethod
     def col_vector(cls, array: List) -> Matrix:
+        """
+        Special constructor to form a column vector (i.e. a one-column matrix). The
+        values of array are placed in distinct rows of the matrix.
+        """
         elements = [[el] for el in array]
         return Matrix(elements)
 
     @classmethod
     def row_vector(cls, array: List) -> Matrix:
+        """
+        Special constructor to form a row vector (i.e. a one-row matrix). The
+        values of array are placed in distinct columns of the matrix.
+        """
         elements = [array]
         return Matrix(elements)
 
     @classmethod
     def merge_cols(cls, array: List[Matrix]) -> Matrix:
+        """
+        Special constructor to horizontally merge a list of matrices. In list order,
+        the matrices are combined into one matrix with consistent number of rows.
+        """
         col_count = len(array)
         row_count = array[0].num_row
         base = [[0 for _ in range(col_count)] for _ in range(row_count)]
@@ -54,6 +77,10 @@ class Matrix:
 
     @classmethod
     def merge_rows(cls, array: List[Matrix]) -> Matrix:
+        """
+        Special constructor to vertically merge a list of matrices. In list order,
+        the matrices are combined into one matrix with consistent number of columns.
+        """
         row_count = len(array)
         col_count = array[0].num_col
         base = [[0 for _ in range(col_count)] for _ in range(row_count)]
@@ -65,16 +92,16 @@ class Matrix:
     @classmethod
     def copy(cls, mat: Matrix) -> Matrix:
         """
-        Returns a new Matrix object with the same dimensions and values as the initialized Matrix instance.
-        Does not retain augments.
+        Returns a new Matrix object with the same dimensions and values as the
+        initialized Matrix instance. Does not retain augments.
         """
         return Matrix(mat.unchanged_rows)
 
     @classmethod
     def copy_current(cls, mat: Matrix) -> Matrix:
         """
-        Returns a new Matrix object with the same dimensions and values as the current Matrix instance.
-        Does not retain augments.
+        Returns a new Matrix object with the same dimensions and values as the
+        current Matrix instance. Does not retain augments.
         """
         return Matrix(mat.rows)
 
@@ -328,7 +355,11 @@ class Matrix:
         product.cleanup()
         return product
 
-    def _sum_corr_prod(self, other: Matrix, i: int, j: int) -> int:
+    def _sum_corr_prod(self, other: Matrix, i: int, j: int):
+        """
+        Returns the sum of the products of corresponding elements of the ith row and
+        the jth column of the matrix instance. Used for _matmul.
+        """
         row = self._get_row(i)
         col = other._get_col(j)
         sum = 0
@@ -364,6 +395,6 @@ class Matrix:
 
     def _deaugment(self) -> None:
         """
-        Clears the augmented matrix if it exists, otherwise does nothing.
+        Clears the augmented matrix if it exists.
         """
         self.aug_matrix = None
