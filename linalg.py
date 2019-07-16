@@ -63,7 +63,7 @@ class LinAlg:
         return max(optimal_row, optimal_col, key = lambda l: l[1])
 
     @staticmethod
-    def determinant(A: Matrix) -> int:
+    def determinant(A: Matrix):
         """
         Returns the determinant of matrix A.
         """
@@ -81,29 +81,50 @@ class LinAlg:
         else:
             start_axis = LinAlg._optimal_axis_calc(A)
             axis_index, axis_type = start_axis[0], start_axis[2]
-            matrix_copy = Matrix.copy_current(A)
-            det = 0
             if axis_type == "row":
-                matrix_copy._del_row(axis_index)
-                for j in range(A.num_col):
-                    multiplier = A._get_val(axis_index, j)
-                    if multiplier != 0:
-                        matrix_copy_2 = Matrix.copy_current(matrix_copy)
-                        matrix_copy_2._del_col(j)
-                        if (axis_index + j) % 2 == 1:
-                            multiplier *= -1.
-                        det += multiplier * LinAlg.determinant(matrix_copy_2)
+                return LinAlg._det_thru_row(A, axis_index)
             elif axis_type == "col":
-                matrix_copy._del_col(axis_index)
-                for i in range(A.num_row):
-                    multiplier = A._get_val(i, axis_index)
-                    if multiplier != 0:
-                        matrix_copy_2 = Matrix.copy_current(matrix_copy)
-                        matrix_copy_2._del_row(i)
-                        if (i + axis_index) % 2 == 1:
-                            multiplier *= -1.
-                        det += multiplier * LinAlg.determinant(matrix_copy_2)
-            return det
+                return LinAlg._det_thru_col(A, axis_index)
+            else:
+                return 0
+
+    @staticmethod
+    def _det_thru_row(B: Matrix, row_index: int):
+        """
+        Helper method used for calculating determinant of some matrix B if
+        the optimal axis (i.e. the one with the most zeros) is a row.
+        """
+        B_copy = Matrix.copy_current(B)
+        B_copy._del_row(row_index)
+        det = 0
+        for j in range(B.num_col):
+            multiplier = B._get_val(row_index, j)
+            if multiplier != 0:
+                B_copy_2 = Matrix.copy_current(B_copy)
+                B_copy_2._del_col(j)
+                if (j + row_index) % 2 == 1:
+                    multiplier *= -1.
+                det += multiplier * LinAlg.determinant(B_copy_2)
+        return det
+
+    @staticmethod
+    def _det_thru_col(B: Matrix, col_index: int):
+        """
+        Helper method used for calculating determinant of some matrix B if
+        the optimal axis (i.e. the one with the most zeros) is a column.
+        """
+        B_copy = Matrix.copy_current(B)
+        B_copy._del_col(col_index)
+        det = 0
+        for i in range(B.num_row):
+            multiplier = B._get_val(i, col_index)
+            if multiplier != 0:
+                B_copy_2 = Matrix.copy_current(B_copy)
+                B_copy_2._del_row(i)
+                if (i + col_index) % 2 == 1:
+                    multiplier *= -1.
+                det += multiplier * LinAlg.determinant(B_copy_2)
+        return det
 
     """
     Row Reduction
